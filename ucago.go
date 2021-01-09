@@ -16,6 +16,8 @@ func init() {
 	viper.ReadInConfig()
 }
 
+var date_month = ""
+
 func main() {
 	// create a new collector
 	collector := colly.NewCollector()
@@ -51,16 +53,51 @@ func main() {
 		//fmt.Printf("Link found: %q -> %s\n", e.Text, link)
 		//c.Visit(e.Request.AbsoluteURL(link))
 	})
-	collector.OnHTML("#mess_list_tbody tr", func(e *colly.HTMLElement) {
-		// data := e.ChildText("td[colspan='3']")
-		content_link := e.ChildAttr("td > a[href]", "href")
+	/*
+		MAIL BOX
+		collector.OnHTML("#mess_list_tbody tr", func(e *colly.HTMLElement) {
+			// data := e.ChildText("td[colspan='3']")
+			content_link := e.ChildAttr("td > a[href]", "href")
 
-		// data = strings.ReplaceAll(data, " \t", "|")
-		// val := strings.Split(strings.Join(strings.Fields(strings.TrimSpace(data)), " "), "|")
-		// fmt.Println(val, "link:", content_link)
-		details_collector.Visit(e.Request.AbsoluteURL(content_link))
+			// data = strings.ReplaceAll(data, " \t", "|")
+			// val := strings.Split(strings.Join(strings.Fields(strings.TrimSpace(data)), " "), "|")
+			// fmt.Println(val, "link:", content_link)
+			details_collector.Visit(e.Request.AbsoluteURL(content_link))
 
+		})
+	*/
+
+	reCalDate := regexp.MustCompile(`[0-9][0-9]?/([0-9]{2})?`)
+	collector.OnHTML(".ZhCalMonthDay", func(e *colly.HTMLElement) {
+		//		fmt.Println(e)
+		//link := e.ChildAttr("div > a[href]", "href")
+		//		fmt.Println("Date Month:", date_month)
+		date := e.ChildText("div > a[href]")
+
+		// format the date to dd/mm for the date dd based on zimbra calendar data
+		if reCalDate.MatchString(date) {
+			date_month = strings.Split(date, "/")[1]
+		} else {
+			date = date + "/" + date_month
+		}
+
+		fmt.Println("Date:", date, "->", reCalDate.MatchString(date))
+		e.ForEach(".ZhCalMonthAppt", func(ind int, item *colly.HTMLElement) {
+			course_link := item.ChildAttr("a[href]", "href")
+			course_name := item.ChildText("a[href]")
+
+			course_name = strings.Join(strings.Fields(strings.TrimSpace(course_name)), " ")
+			splited := strings.SplitN(course_name, " ", 2)
+
+			fmt.Println("\tDate start:", splited[0])
+			fmt.Println("\tCourse name:", splited[1])
+			fmt.Println("\tCourse link:", course_link)
+		})
+
+		// ZhCalMonthAppt
+		//	details_collector.Visit(e.Request.AbsoluteURL(link))
 	})
+
 	details_collector.OnHTML(".ZhAppContent2", func(e *colly.HTMLElement) {
 		data := e.ChildTexts(".MsgHdr table table tr")
 		date := e.ChildText("td[class='MsgHdrSent'][align='right']")
@@ -118,5 +155,7 @@ func main() {
 	*/
 
 	// start scraping
-	collector.Visit("https://mail.uca.fr/zimbra/h/") // zimbra/h for basic client without js
+	// zimbra/h for basic client without js
+	collector.Visit("https://mail.uca.fr/zimbra/h/calendar?view=month")
+	//	collector.Visit("https://mail.uca.fr/zimbra/h/")}
 }
