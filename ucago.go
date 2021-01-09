@@ -17,13 +17,14 @@ func init() {
 	viper.ReadInConfig()
 }
 
-var date_month = ""
+var date_month string = ""
 
 func main() {
-	// create a new collector
+	// create new collectors
 	collector := colly.NewCollector()
 	details_collector := colly.NewCollector()
 
+	// data container
 	cal := NewCalendar()
 
 	// change this line for command input instead of .env
@@ -41,34 +42,12 @@ func main() {
 
 	// attach callbacks
 	collector.OnResponse(func(r *colly.Response) {
-		log.Println("response received", r.StatusCode)
-		//r.Save("./body.html")
+		log.Println("Response received", r.StatusCode)
 	})
 
 	details_collector.OnResponse(func(r *colly.Response) {
-		log.Println("DC response received", r.StatusCode)
-		//r.Save("./body.html")
+		log.Println("Details_collector response received", r.StatusCode)
 	})
-
-	// On every a element which has href attribute call callback
-	collector.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		//link := e.Attr("href")
-		//fmt.Printf("Link found: %q -> %s\n", e.Text, link)
-		//c.Visit(e.Request.AbsoluteURL(link))
-	})
-	/*
-		MAIL BOX
-		collector.OnHTML("#mess_list_tbody tr", func(e *colly.HTMLElement) {
-			// data := e.ChildText("td[colspan='3']")
-			content_link := e.ChildAttr("td > a[href]", "href")
-
-			// data = strings.ReplaceAll(data, " \t", "|")
-			// val := strings.Split(strings.Join(strings.Fields(strings.TrimSpace(data)), " "), "|")
-			// fmt.Println(val, "link:", content_link)
-			details_collector.Visit(e.Request.AbsoluteURL(content_link))
-
-		})
-	*/
 
 	reCalDate := regexp.MustCompile(`[0-9][0-9]?/([0-9]{2})?`)
 
@@ -88,8 +67,7 @@ func main() {
 			course_name := item.ChildText("a[href]")
 
 			course_name = strings.Join(strings.Fields(strings.TrimSpace(course_name)), " ")
-			// split HH:MM and NAME from course_name = "HH:MM NAME"
-			splited := strings.SplitN(course_name, " ", 2)
+			splited := strings.SplitN(course_name, " ", 2) // split HH:MM and NAME from course_name = "HH:MM NAME"
 
 			course := NewCourse(splited[0], splited[1])
 			cal.AddCourse(date, course)
@@ -146,19 +124,12 @@ func main() {
 
 	// Before making a request print "Visiting ..."
 	collector.OnRequest(func(r *colly.Request) {
-		// log.Println("Visiting", r.URL.String())
+		log.Println("Scrapping", r.URL.String())
 	})
 
-	/*
-		details_collector.OnRequest(func(r *colly.Request) {
-			log.Println("Visiting", r.URL.String())
-		})
-	*/
-
-	// start scraping
-	// zimbra/h for basic client without js
+	// start scraping on  zimbra/h for basic client without js
 	collector.Visit("https://mail.uca.fr/zimbra/h/calendar?view=month")
-	//	collector.Visit("https://mail.uca.fr/zimbra/h/")}
+	//collector.Visit("https://mail.uca.fr/zimbra/h/")}
 
 	for k, v := range cal.CourseList {
 		fmt.Println("key:", k)
