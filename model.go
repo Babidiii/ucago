@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 //------------------------------------- MAIL -------------------------------------
 type Mail struct {
 	Header  map[string]string
@@ -9,19 +11,19 @@ type Mail struct {
 
 //------------------------------------ COURSES -----------------------------------
 type Calendar struct {
-	CourseList map[string][]*Course
+	CourseList map[string]map[string]*Course
 }
 
 func (c *Calendar) AddCourse(date string, course *Course) {
 	if _, exist := c.CourseList[date]; !exist {
-		c.CourseList[date] = make([]*Course, 0)
+		c.CourseList[date] = make(map[string]*Course)
 	}
-	c.CourseList[date] = append(c.CourseList[date], course)
+	c.CourseList[date][course.Start] = course
 }
 
 func NewCalendar() *Calendar {
 	return &Calendar{
-		CourseList: make(map[string][]*Course),
+		CourseList: make(map[string]map[string]*Course),
 	}
 }
 
@@ -29,6 +31,9 @@ func NewCalendar() *Calendar {
 type Course struct {
 	Start string
 	Name  string
+	Link  string
+	Info  map[string]string
+	End   string
 }
 
 func NewCourse(start string, name string) *Course {
@@ -36,4 +41,11 @@ func NewCourse(start string, name string) *Course {
 		Start: start,
 		Name:  name,
 	}
+}
+
+func (c *Course) Display() {
+	fmt.Printf("\t%s\n", c.Name)
+	fmt.Printf("\tStart: %s End: %s\n", c.Start, c.End)
+	fmt.Printf("\tLink:\n\t%s\n", c.Link)
+	//	fmt.Println("\tInfo:")
 }
