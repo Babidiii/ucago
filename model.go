@@ -12,14 +12,14 @@ type Calendar struct {
 	CourseList map[string][]*Course
 }
 
-func (c *Calendar) AddCourse(course *Course) {
-	if _, exist := c.CourseList[course.Date]; !exist {
-		c.CourseList[course.Date] = make([]*Course, 1)
+func (c *Calendar) AddCourse(date string, course *Course) {
+	if _, exist := c.CourseList[date]; !exist {
+		c.CourseList[date] = make([]*Course, 0)
 	}
-	c.CourseList[courseList.Date] = append(c.CourseList, course)
+	c.CourseList[date] = append(c.CourseList[date], course)
 }
 
-func NewCalendar() {
+func NewCalendar() *Calendar {
 	return &Calendar{
 		CourseList: make(map[string][]*Course),
 	}
@@ -27,14 +27,12 @@ func NewCalendar() {
 
 //------------------------------------ COURSE ------------------------------------
 type Course struct {
-	Date  string
 	Start string
 	Name  string
 }
 
-func (c *Course) NewCourse(date string, start string, name string) {
+func NewCourse(start string, name string) *Course {
 	return &Course{
-		Date:  date,
 		Start: start,
 		Name:  name,
 	}

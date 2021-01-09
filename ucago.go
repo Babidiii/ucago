@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func init() {
@@ -22,6 +23,8 @@ func main() {
 	// create a new collector
 	collector := colly.NewCollector()
 	details_collector := colly.NewCollector()
+
+	cal := NewCalendar()
 
 	// change this line for command input instead of .env
 	body := "uusername=" + viper.GetString("USERNAME") + "&password=" + viper.GetString("PASSWORD") + "&execution=" + viper.GetString("EXECUTION") + "&_eventId=submit&submit=LOGIN"
@@ -68,34 +71,32 @@ func main() {
 	*/
 
 	reCalDate := regexp.MustCompile(`[0-9][0-9]?/([0-9]{2})?`)
+
 	collector.OnHTML(".ZhCalMonthDay", func(e *colly.HTMLElement) {
-		//		fmt.Println(e)
-		//link := e.ChildAttr("div > a[href]", "href")
-		//		fmt.Println("Date Month:", date_month)
 		date := e.ChildText("div > a[href]")
 
 		// format the date to dd/mm for the date dd based on zimbra calendar data
 		if reCalDate.MatchString(date) {
 			date_month = strings.Split(date, "/")[1]
+			date += "/" + strconv.Itoa(time.Now().Year())
 		} else {
-			date = date + "/" + date_month
+			date = date + "/" + date_month + "/" + strconv.Itoa(time.Now().Year())
 		}
 
-		fmt.Println("Date:", date, "->", reCalDate.MatchString(date))
 		e.ForEach(".ZhCalMonthAppt", func(ind int, item *colly.HTMLElement) {
-			course_link := item.ChildAttr("a[href]", "href")
+			//course_link := item.ChildAttr("a[href]", "href")
 			course_name := item.ChildText("a[href]")
 
 			course_name = strings.Join(strings.Fields(strings.TrimSpace(course_name)), " ")
+			// split HH:MM and NAME from course_name = "HH:MM NAME"
 			splited := strings.SplitN(course_name, " ", 2)
 
-			fmt.Println("\tDate start:", splited[0])
-			fmt.Println("\tCourse name:", splited[1])
-			fmt.Println("\tCourse link:", course_link)
+			course := NewCourse(splited[0], splited[1])
+			cal.AddCourse(date, course)
+
+			//details_collector.Visit(e.Request.AbsoluteURL(link))
 		})
 
-		// ZhCalMonthAppt
-		//	details_collector.Visit(e.Request.AbsoluteURL(link))
 	})
 
 	details_collector.OnHTML(".ZhAppContent2", func(e *colly.HTMLElement) {
@@ -158,4 +159,11 @@ func main() {
 	// zimbra/h for basic client without js
 	collector.Visit("https://mail.uca.fr/zimbra/h/calendar?view=month")
 	//	collector.Visit("https://mail.uca.fr/zimbra/h/")}
+
+	for k, v := range cal.CourseList {
+		fmt.Println("key:", k)
+		for ind, c := range v {
+			fmt.Printf("  %d --> %v\n", ind, c)
+		}
+	}
 }
